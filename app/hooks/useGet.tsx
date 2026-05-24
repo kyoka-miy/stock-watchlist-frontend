@@ -1,26 +1,45 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios, { AxiosRequestConfig } from "axios";
 
-export function useGet<T = any>(url: string, config?: AxiosRequestConfig) {
-  const [data, setData] = useState<T>(null as any);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<any>(null);
-  const [trigger, setTrigger] = useState(0);
+type Props = {
+  url: string;
+  query?: string;
+  shouldFetch?: boolean;
+};
 
-  const refetch = () => setTrigger((t) => t + 1);
+export function useGet<T = any>({ url, query = "", shouldFetch = false }: Props) {
+  const [data, setData] = useState<T>(null as any);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${url}?q=${encodeURIComponent(query)}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const result = await response.json();
+      if (response.ok) {
+        setData(result as T);
+      } else {
+        throw new Error(result.message || "");
+      }
+      return result as T;
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : "An error occurred";
+      console.error("Error fetching data:", errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [url, query]);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    axios
-      .get<T>(url, config)
-      .then((res) => setData(res.data))
-      .catch((err) => {
-        setError(err);
-        console.error("Error fetching data:", err);
-      })
-      .finally(() => setLoading(false));
-  }, [url, trigger]);
+    if (shouldFetch) {
+      refetch();
+    }
+  }, [shouldFetch, refetch]);
 
-  return { data, loading, error, refetch };
+  return { data, isLoading, refetch };
 }

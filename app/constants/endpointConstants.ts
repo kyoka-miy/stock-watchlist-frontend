@@ -4,4 +4,5 @@ export const ENDPOINTS = {
   STOCK_LISTS: `${endpointBase}/stock-lists`,
   STOCK_LISTS_WITH_COUNT: (accountId: string) =>
     `${endpointBase}/stock-lists/count/${accountId}`,
+  STOCKS_SEARCH: `${endpointBase}/stocks/search`,
 };

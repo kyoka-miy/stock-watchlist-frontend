@@ -2,7 +2,16 @@
 import Input from "../atoms/Input";
 import styled from "styled-components";
 import { FaSearch } from "react-icons/fa";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
+// debounce utility
+function debounce<F extends (...args: any[]) => void>(func: F, wait: number) {
+  let timeout: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<F>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+import { StockSearchResponse } from "@/app/api-interface/stockList";
 
 const Wrapper = styled.div<{ $focused: boolean }>`
   display: flex;
@@ -16,18 +25,6 @@ const Wrapper = styled.div<{ $focused: boolean }>`
   min-height: 48px;
   transition: border 0.18s;
 `;
-
-export type SearchCandidate = {
-  code: string;
-  name: string;
-  price: string;
-  change: string;
-  changeRate: string;
-  changeColor: string;
-  per: string;
-  pbr: string;
-  dividend: string;
-};
 
 const Dropdown = styled.div`
   position: absolute;
@@ -99,8 +96,8 @@ type Props = {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSearch: () => void;
-  candidates?: SearchCandidate[];
-  onSelectCandidate?: (c: SearchCandidate) => void;
+  candidates?: StockSearchResponse[];
+  onSelectCandidate?: (c: StockSearchResponse) => void;
 };
 
 export default function SearchBox({
@@ -110,9 +107,11 @@ export default function SearchBox({
   candidates = [],
   onSelectCandidate,
 }: Props) {
+  const debouncedOnSearch = useCallback(debounce(onSearch, 400), [onSearch]);
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const showDropdown = focused && candidates.length > 0;
+  const showDropdown = focused && value && candidates && candidates.length > 0;
+
   return (
     <div style={{ position: "relative", width: "100%" }}>
       <Wrapper $focused={focused} onClick={() => inputRef.current?.focus()}>
@@ -127,7 +126,10 @@ export default function SearchBox({
         <Input
           ref={inputRef}
           value={value}
-          onChange={onChange}
+          onChange={(e) => {
+            onChange(e);
+            debouncedOnSearch();
+          }}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onKeyDown={(e) => {
@@ -150,18 +152,24 @@ export default function SearchBox({
           <DropdownHeader>検索結果: {candidates.length}件</DropdownHeader>
           {candidates.map((c) => (
             <CandidateRow
-              key={c.code}
+              key={c.symbol}
               onMouseDown={() => onSelectCandidate?.(c)}
             >
-              <Code>{c.code}</Code>
+              <Code>{c.symbol}</Code>
               <Name>{c.name}</Name>
-              <Price>{c.price}</Price>
-              <Change color={c.changeColor}>
+              <Price>
+                {c.current_price !== null
+                  ? `¥${c.current_price.toLocaleString()}`
+                  : "-"}
+              </Price>
+              {/* <Change color={c.changeColor}>
                 {c.change} {c.changeRate}
-              </Change>
-              <Info>PER: {c.per}</Info>
-              <Info>PBR: {c.pbr}</Info>
-              <Info>配当: {c.dividend}</Info>
+              </Change> */}
+              <Info>PER: {c.per !== null ? `${c.per}倍` : "-"}</Info>
+              <Info>PBR: {c.pbr !== null ? `${c.pbr}倍` : "-"}</Info>
+              <Info>
+                配当: {c.dividend_yield !== null ? `${c.dividend_yield}%` : "-"}
+              </Info>
             </CandidateRow>
           ))}
         </Dropdown>

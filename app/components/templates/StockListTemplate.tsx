@@ -1,16 +1,15 @@
 ("use client");
 import { useEffect, useState } from "react";
 import Button from "../atoms/Button";
-import { FaPlus, FaTrash, FaEdit } from "react-icons/fa";
-import SearchBox, { SearchCandidate } from "../molecules/SearchBox";
 import StockList, { Stock } from "../organisms/StockList";
 import styled from "styled-components";
+import { StockListTags } from "../organisms/StockListTags";
 import { StockListWithCount } from "@/app/api-interface/stockList";
 import { ENDPOINTS } from "@/app/constants/endpointConstants";
 import { useGet } from "@/app/hooks/useGet";
-import { usePost } from "@/app/hooks/usePost";
 import { useDelete } from "@/app/hooks/useDelete";
-import { usePut } from "@/app/hooks/usePut";
+import Card from "../atoms/Card";
+import { SearchBoxCard } from "../organisms/SearchBoxCard";
 
 const initialStockLists = [
   {
@@ -135,14 +134,6 @@ const Wrapper = styled.div`
   background: #f7fafd;
 `;
 
-const Card = styled.div`
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
-  padding: 2.2rem 2.2rem 1.5rem 2.2rem;
-  margin-bottom: 28px;
-`;
-
 const Tab = styled.div<{ active: boolean }>`
   display: flex;
   align-items: center;
@@ -165,19 +156,6 @@ const Tab = styled.div<{ active: boolean }>`
     border 0.18s,
     background 0.18s,
     color 0.18s;
-`;
-
-const TabBadge = styled.span<{ active: boolean }>`
-  background: ${({ active }) => (active ? "#1769ff" : "#e3e8ef")};
-  color: ${({ active }) => (active ? "#fff" : "#6b7684")};
-  border-radius: 12px;
-  font-size: 13.5px;
-  padding: 0 10px;
-  margin-left: 6px;
-  min-width: 22px;
-  text-align: center;
-  display: inline-block;
-  font-weight: 700;
 `;
 
 const ModalOverlay = styled.div`
@@ -212,15 +190,15 @@ export default function StockListTemplate() {
   >([]);
   const [selectedListId, setSelectedListId] = useState<number>();
   const [search, setSearch] = useState("");
-  const [showAddPopup, setShowAddPopup] = useState(false);
-  const [newListName, setNewListName] = useState("");
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [editStock, setEditStock] = useState<Stock | null>(null);
-  const [editingListId, setEditingListId] = useState<number | null>(null);
-  const [editingListName, setEditingListName] = useState("");
 
   const { data: stockListsWithCountData, refetch: refetchStockListsWithCount } =
-    useGet<StockListWithCount[]>(ENDPOINTS.STOCK_LISTS_WITH_COUNT("2"));
+    useGet<StockListWithCount[]>({
+      url: ENDPOINTS.STOCK_LISTS_WITH_COUNT("2"),
+      shouldFetch: true,
+    });
+    
   useEffect(() => {
     if (stockListsWithCountData == null) return;
 
@@ -241,81 +219,6 @@ export default function StockListTemplate() {
       )
     : [];
 
-  // 検索候補リスト生成
-  const candidates: SearchCandidate[] =
-    search.trim().length > 0
-      ? allStocks
-          .filter((s) => s.name.includes(search) || s.code.includes(search))
-          .map((s) => ({
-            code: s.code,
-            name: s.name,
-            price: `¥${s.price.toLocaleString()}`,
-            change:
-              s.code === "9432"
-                ? "-¥15"
-                : s.code === "6594"
-                  ? "-¥120"
-                  : s.code === "2914"
-                    ? "-¥18"
-                    : "+¥45",
-            changeRate:
-              s.code === "9432"
-                ? "-1.27%"
-                : s.code === "6594"
-                  ? "-1.04%"
-                  : s.code === "2914"
-                    ? "-0.55%"
-                    : "+1.61%",
-            changeColor:
-              s.code === "9432" || s.code === "6594" || s.code === "2914"
-                ? "#e74c3c"
-                : "#00b050",
-            per: `${s.per}倍`,
-            pbr: `${s.pbr}倍`,
-            dividend: `${s.dividendYield}%`,
-          }))
-      : [];
-
-  // 検索候補選択時の処理例（リストに追加）
-  const handleSelectCandidate = (c: SearchCandidate) => {
-    if (!currentList) return;
-    if (currentList.stocks.some((s) => s.code === c.code)) return;
-    setStockLists((prev) =>
-      prev.map((list) =>
-        list.id === selectedListId
-          ? {
-              ...list,
-              stocks: [
-                ...list.stocks,
-                allStocks.find((s) => s.code === c.code)!,
-              ],
-            }
-          : list,
-      ),
-    );
-    setSearch("");
-  };
-
-  const { post: postList, loading: postLoading } = usePost(
-    ENDPOINTS.STOCK_LISTS,
-  );
-
-  const handleAddList = async () => {
-    if (!newListName.trim()) return;
-    const res = await postList({ name: newListName.trim(), account_id: 2 });
-    if (res) {
-      setStockListsWithCount([
-        ...stockListsWithCount,
-        { id: res.id, name: res.name, count: 0 },
-      ]);
-      console.log("Created new list:", stockListsWithCount);
-      setSelectedListId(res.id);
-    }
-    setNewListName("");
-    setShowAddPopup(false);
-  };
-
-  // useDelete hook for deleting a list
   const { del: deleteListApi } = useDelete(
     selectedListId ? `${ENDPOINTS.STOCK_LISTS}/${selectedListId}` : "",
   );
@@ -325,20 +228,6 @@ export default function StockListTemplate() {
     await deleteListApi();
     refetchStockListsWithCount();
     setShowDeletePopup(false);
-  };
-
-  // usePut hook for updating list name
-  const { put: putListName, loading: putLoading } = usePut(
-    editingListId ? `${ENDPOINTS.STOCK_LISTS}/${editingListId}` : "",
-  );
-
-  // リスト名更新API
-  const handleUpdateListName = async (id: number) => {
-    if (!editingListName.trim()) return;
-    await putListName({ name: editingListName });
-    setEditingListId(null);
-    setEditingListName("");
-    refetchStockListsWithCount();
   };
 
   const handleDeleteStock = (stockCode: string) => {
@@ -371,273 +260,15 @@ export default function StockListTemplate() {
             気になる銘柄を追加して、重要指標を一覧で比較できます
           </div>
         </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            margin: "2rem 0 1.5rem 0",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {stockListsWithCount.map((list) => (
-              <Tab
-                key={list.id}
-                active={selectedListId === list.id}
-                onClick={() => setSelectedListId(list.id)}
-              >
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {editingListId === list.id ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editingListName}
-                        onChange={(e) => setEditingListName(e.target.value)}
-                        style={{
-                          fontSize: 15.5,
-                          borderRadius: 8,
-                          border: "2px solid #3498db",
-                          padding: "0.2rem 0.7rem",
-                          minWidth: 80,
-                          marginRight: 6,
-                        }}
-                        autoFocus
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <span
-                        style={{
-                          background: "#1769ff",
-                          color: "#fff",
-                          fontWeight: 700,
-                          borderRadius: 10,
-                          fontSize: 15.5,
-                          padding: "0.2rem 0.9rem",
-                          minWidth: 36,
-                          border: "2px solid #fff",
-                          marginRight: 2,
-                          marginLeft: 2,
-                          boxShadow: "none",
-                          letterSpacing: "0.01em",
-                          transition: "all 0.18s",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          cursor: editingListName.trim()
-                            ? "pointer"
-                            : "not-allowed",
-                          opacity: editingListName.trim() ? 1 : 0.5,
-                        }}
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (editingListName.trim()) {
-                            await handleUpdateListName(list.id);
-                          }
-                        }}
-                      >
-                        ✓
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 18 18"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        style={{ marginRight: 2 }}
-                      >
-                        <rect
-                          x="3"
-                          y="4.5"
-                          width="12"
-                          height="1.5"
-                          rx="0.75"
-                          fill={selectedListId === list.id ? "#fff" : "#6b7684"}
-                        />
-                        <rect
-                          x="3"
-                          y="8.25"
-                          width="12"
-                          height="1.5"
-                          rx="0.75"
-                          fill={selectedListId === list.id ? "#fff" : "#6b7684"}
-                        />
-                        <rect
-                          x="3"
-                          y="12"
-                          width="12"
-                          height="1.5"
-                          rx="0.75"
-                          fill={selectedListId === list.id ? "#fff" : "#6b7684"}
-                        />
-                      </svg>
-                      {list.name}
-                      <TabBadge active={selectedListId === list.id}>
-                        {list.count}
-                      </TabBadge>
-                    </>
-                  )}
-                </span>
-                {selectedListId === list.id && editingListId !== list.id && (
-                  <>
-                    <FaEdit
-                      style={{
-                        color: "#fff",
-                        cursor: "pointer",
-                        marginRight: 2,
-                        marginLeft: 8,
-                        opacity: 1,
-                        fontSize: 17,
-                      }}
-                      size={17}
-                      title="Edit List"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingListId(list.id);
-                        setEditingListName(list.name);
-                      }}
-                    />
-                    <FaTrash
-                      style={{
-                        color: "#fff",
-                        cursor:
-                          stockLists.length <= 1 ? "not-allowed" : "pointer",
-                        opacity: stockLists.length <= 1 ? 0.5 : 1,
-                        marginLeft: 2,
-                        fontSize: 17,
-                      }}
-                      size={17}
-                      title="Delete List"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (stockLists.length > 1) setShowDeletePopup(true);
-                      }}
-                    />
-                  </>
-                )}
-              </Tab>
-            ))}
-          </div>
-          {!showAddPopup ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "2px dashed #bfc8d6",
-                borderRadius: 14,
-                background: "#fff",
-                color: "#222b45",
-                fontWeight: 700,
-                fontSize: 16,
-                padding: "0.5rem 1.3rem",
-                gap: 8,
-                cursor: "pointer",
-                transition: "all 0.18s",
-                boxShadow: "none",
-                letterSpacing: "0.01em",
-              }}
-              onClick={() => setShowAddPopup(true)}
-              aria-label="新規リスト"
-            >
-              <FaPlus
-                color="#1769ff"
-                style={{ marginRight: 6, fontSize: 18 }}
-              />{" "}
-              新規リスト
-            </div>
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                background: "#fff",
-                borderRadius: 18,
-                border: "1.5px solid #e3e8ef",
-                padding: "0.3rem 0.7rem 0.3rem 1rem",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-              }}
-            >
-              <input
-                type="text"
-                value={newListName}
-                onChange={(e) => setNewListName(e.target.value)}
-                style={{
-                  padding: "0.45rem 1.1rem",
-                  borderRadius: 8,
-                  border: "2px solid #3498db",
-                  fontSize: 15.5,
-                  minWidth: 140,
-                  outline: "none",
-                  background: "#fff",
-                  color: "#222",
-                  fontWeight: 500,
-                  letterSpacing: "0.01em",
-                }}
-                placeholder="リスト名"
-                autoFocus
-              />
-              <Button
-                onClick={handleAddList}
-                type="button"
-                disabled={!newListName.trim()}
-                style={{
-                  background: !newListName.trim() ? "#e3e8ef" : "#1abc9c",
-                  color: !newListName.trim() ? "#bfc8d6" : "#fff",
-                  fontWeight: 700,
-                  borderRadius: 10,
-                  fontSize: 15.5,
-                  padding: "0.4rem 1.1rem",
-                  minWidth: 56,
-                  border: "none",
-                  boxShadow: "none",
-                  letterSpacing: "0.01em",
-                  transition: "all 0.18s",
-                }}
-              >
-                作成
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowAddPopup(false);
-                  setNewListName("");
-                }}
-                type="button"
-                style={{
-                  background: "#f0f1f4",
-                  color: "#222b45",
-                  fontWeight: 700,
-                  borderRadius: 10,
-                  fontSize: 15.5,
-                  padding: "0.4rem 1.1rem",
-                  minWidth: 56,
-                  border: "none",
-                  boxShadow: "none",
-                  letterSpacing: "0.01em",
-                  transition: "all 0.18s",
-                }}
-              >
-                キャンセル
-              </Button>
-            </div>
-          )}
-        </div>
-        {/* 検索バーのカード化＋説明文 */}
-        <Card>
-          <SearchBox
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onSearch={() => {}}
-            candidates={candidates}
-            onSelectCandidate={handleSelectCandidate}
-          />
-          <div style={{ color: "#888", fontSize: 15, marginTop: 8 }}>
-            検索結果から銘柄をクリックして追加できます
-          </div>
-        </Card>
-        {/* テーブル部分 */}
+        <StockListTags
+          stockListsWithCount={stockListsWithCount}
+          setStockListsWithCount={setStockListsWithCount}
+          selectedListId={selectedListId}
+          setSelectedListId={setSelectedListId}
+          setShowDeletePopup={setShowDeletePopup}
+          refetchStockListsWithCount={refetchStockListsWithCount}
+        />
+        <SearchBoxCard />
         <Card style={{ margin: 0, boxShadow: "0 4px 24px rgba(0,0,0,0.07)" }}>
           <StockList
             stocks={filteredStocks}
@@ -645,7 +276,6 @@ export default function StockListTemplate() {
             onEdit={setEditStock}
           />
         </Card>
-        {/* Edit Stock Popup */}
         {editStock && (
           <ModalOverlay>
             <ModalContent>
