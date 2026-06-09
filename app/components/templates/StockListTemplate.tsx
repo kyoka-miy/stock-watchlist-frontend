@@ -10,6 +10,7 @@ import { useGet } from "@/app/hooks/useGet";
 import { useDelete } from "@/app/hooks/useDelete";
 import Card from "../atoms/Card";
 import { SearchBoxCard } from "../organisms/SearchBoxCard";
+import { StockInfo, StockInfoWithPage } from "@/app/api-interface/stock";
 
 const initialStockLists = [
   {
@@ -189,8 +190,8 @@ export default function StockListTemplate() {
     StockListWithCount[]
   >([]);
   const [selectedListId, setSelectedListId] = useState<number>();
-  const [search, setSearch] = useState("");
   const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [stocks, setStocks] = useState<StockInfo[]>([]);
   const [editStock, setEditStock] = useState<Stock | null>(null);
 
   const { data: stockListsWithCountData, refetch: refetchStockListsWithCount } =
@@ -198,7 +199,7 @@ export default function StockListTemplate() {
       url: ENDPOINTS.STOCK_LISTS_WITH_COUNT("2"),
       shouldFetch: true,
     });
-    
+
   useEffect(() => {
     if (stockListsWithCountData == null) return;
 
@@ -210,14 +211,17 @@ export default function StockListTemplate() {
     }
   }, [stockListsWithCountData]);
 
-  const currentList = stockLists.find((l) => l.id === selectedListId);
-  const filteredStocks = currentList
-    ? currentList.stocks.filter(
-        (stock) =>
-          stock.name.toLowerCase().includes(search.toLowerCase()) ||
-          stock.code.toLowerCase().includes(search.toLowerCase()),
-      )
-    : [];
+  const { data: stockInfoWithPage, refetch: refetchStocks } =
+    useGet<StockInfoWithPage>({
+      url: ENDPOINTS.STOCK_LIST(selectedListId ?? 0),
+      shouldFetch: !!selectedListId,
+    });
+  useEffect(() => {
+    if (selectedListId) {
+      refetchStocks();
+    }
+  }, [selectedListId]);
+  console.log("Stocks data:", stockInfoWithPage);
 
   const { del: deleteListApi } = useDelete(
     selectedListId ? `${ENDPOINTS.STOCK_LISTS}/${selectedListId}` : "",
@@ -271,9 +275,8 @@ export default function StockListTemplate() {
         <SearchBoxCard />
         <Card style={{ margin: 0, boxShadow: "0 4px 24px rgba(0,0,0,0.07)" }}>
           <StockList
-            stocks={filteredStocks}
+            stockInfoWithPage={stockInfoWithPage}
             onSelect={() => {}}
-            onEdit={setEditStock}
           />
         </Card>
         {editStock && (

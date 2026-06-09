@@ -1,14 +1,13 @@
+import { StockInfo } from "./stock";
+
 export type StockListWithCount = {
   id: number;
   name: string;
   count: number;
 };
 
-export type StockSearchResponse = {
-    symbol: string;
+export type StockListWithStocks = {
+    id: number;
     name: string;
-    current_price: number | null;
-    per: number | null;
-    pbr: number | null;
-    dividend_yield: number | null;
+    stocks: StockInfo[];
 }

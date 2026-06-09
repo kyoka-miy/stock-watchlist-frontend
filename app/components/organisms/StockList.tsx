@@ -2,6 +2,7 @@
 import styled from "styled-components";
 import { useState } from "react";
 import { FaRegEdit } from "react-icons/fa";
+import { StockInfo, StockInfoWithPage } from "@/app/api-interface/stock";
 
 const Table = styled.table`
   width: 100%;
@@ -78,42 +79,46 @@ export type Stock = {
   sector: string;
 };
 
-type SortKey = keyof Stock;
+type SortKey = keyof StockInfo;
 const columns: { key: SortKey; label: string; isNumeric?: boolean }[] = [
-  { key: "code", label: "銘柄コード" },
+  { key: "symbol", label: "銘柄コード" },
   { key: "name", label: "銘柄名" },
-  { key: "price", label: "株価", isNumeric: true },
-  { key: "dividendPerShare", label: "前日比", isNumeric: true }, // 仮: 本来は前日比用の値をStock型に追加すべき
-  { key: "payoutRatio", label: "出来高", isNumeric: true }, // 仮: 本来は出来高用の値をStock型に追加すべき
-  { key: "roe", label: "時価総額", isNumeric: true }, // 仮: 本来は時価総額用の値をStock型に追加すべき
+  { key: "current_price", label: "株価", isNumeric: true },
+  { key: "dividend_yield", label: "配当利回り", isNumeric: true },
+  { key: "dividend_per_share", label: "1株配当", isNumeric: true },
+  { key: "payout_ratio", label: "配当性向", isNumeric: true },
   { key: "per", label: "PER", isNumeric: true },
   { key: "pbr", label: "PBR", isNumeric: true },
-  { key: "dividendYield", label: "配当利回り", isNumeric: true },
-  { key: "roa", label: "ROE", isNumeric: true },
+  { key: "roe", label: "ROE", isNumeric: true },
+  { key: "roa", label: "ROA", isNumeric: true },
+  { key: "market", label: "市場" },
+  { key: "sector", label: "セクター" },
+  { key: "industry", label: "業種" },
 ];
 
-export default function StockList({
-  stocks,
-  onSelect,
-  onEdit,
-}: {
-  stocks: Stock[];
-  onSelect: (stock: Stock) => void;
-  onEdit?: (stock: Stock) => void;
-}) {
-  const [sortKey, setSortKey] = useState<SortKey>("code");
+type Props = {
+  stockInfoWithPage: StockInfoWithPage;
+  onSelect: (stock: StockInfo) => void;
+};
+
+export default function StockList({ stockInfoWithPage, onSelect }: Props) {
+  const [sortKey, setSortKey] = useState<SortKey>("symbol");
   const [sortAsc, setSortAsc] = useState(true);
 
-  const sortedStocks = [...stocks].sort((a, b) => {
-    const aValue = a[sortKey];
-    const bValue = b[sortKey];
-    if (typeof aValue === "number" && typeof bValue === "number") {
-      return sortAsc ? aValue - bValue : bValue - aValue;
-    }
-    return sortAsc
-      ? String(aValue).localeCompare(String(bValue))
-      : String(bValue).localeCompare(String(aValue));
-  });
+  console.log("Rendering StockList with stocks:", stockInfoWithPage);
+  const sortedStocks =
+    stockInfoWithPage && stockInfoWithPage.stocks.items.length > 0
+      ? [...stockInfoWithPage.stocks.items].sort((a, b) => {
+          const aValue = a[sortKey];
+          const bValue = b[sortKey];
+          if (typeof aValue === "number" && typeof bValue === "number") {
+            return sortAsc ? aValue - bValue : bValue - aValue;
+          }
+          return sortAsc
+            ? String(aValue).localeCompare(String(bValue))
+            : String(bValue).localeCompare(String(aValue));
+        })
+      : [];
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -148,16 +153,11 @@ export default function StockList({
               )}
             </Th>
           ))}
-          <Th
-            style={{ background: "#f7fafd", borderBottom: "2px solid #e3eaf3" }}
-          >
-            操作
-          </Th>
         </tr>
       </thead>
       <tbody>
         {sortedStocks.map((stock) => (
-          <Tr key={stock.code}>
+          <Tr key={stock.symbol} onClick={() => onSelect(stock)}>
             {columns.map((col, idx) => (
               <Td
                 key={col.key}
@@ -172,7 +172,6 @@ export default function StockList({
                 }}
                 onClick={() => onSelect(stock)}
               >
-                {/* Figma画像のような前日比・出来高・時価総額・配当利回り等の表現は本来Stock型拡張が必要。ここでは仮で数値を表示 */}
                 {typeof stock[col.key] === "number"
                   ? col.isNumeric
                     ? (stock[col.key] as number).toLocaleString(undefined, {
@@ -183,17 +182,7 @@ export default function StockList({
               </Td>
             ))}
             <EditCell>
-              <EditIconWrapper
-                onClick={
-                  onEdit
-                    ? (e) => {
-                        e.stopPropagation();
-                        onEdit(stock);
-                      }
-                    : undefined
-                }
-                title="Edit"
-              >
+              <EditIconWrapper onClick={() => {}} title="Edit">
                 <FaRegEdit />
               </EditIconWrapper>
             </EditCell>

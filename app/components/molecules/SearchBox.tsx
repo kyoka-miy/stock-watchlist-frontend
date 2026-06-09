@@ -1,7 +1,8 @@
-"use client";
+("use client");
 import Input from "../atoms/Input";
 import styled from "styled-components";
 import { FaSearch } from "react-icons/fa";
+import { StockSearchCandidate } from "@/app/api-interface/stock";
 import { useState, useRef, useCallback } from "react";
 // debounce utility
 function debounce<F extends (...args: any[]) => void>(func: F, wait: number) {
@@ -11,7 +12,6 @@ function debounce<F extends (...args: any[]) => void>(func: F, wait: number) {
     timeout = setTimeout(() => func(...args), wait);
   };
 }
-import { StockSearchResponse } from "@/app/api-interface/stockList";
 
 const Wrapper = styled.div<{ $focused: boolean }>`
   display: flex;
@@ -46,21 +46,68 @@ const DropdownHeader = styled.div`
   padding: 0.7rem 1.3rem 0.7rem 1.3rem;
   border-bottom: 1.5px solid #e3eaf3;
 `;
-const CandidateRow = styled.div`
+const CandidateRow = styled.div<{ $hovered?: boolean }>`
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.7rem;
   padding: 1.1rem 1.3rem 1.1rem 1.3rem;
   cursor: pointer;
   border-bottom: 1px solid #f3f7fb;
-  background: #fff;
+  background: ${({ $hovered }) => ($hovered ? "#eaf3ff" : "#fff")};
   transition: background 0.13s;
-  &:hover {
-    background: #f3f8ff;
-  }
+  position: relative;
   &:last-child {
     border-bottom: none;
   }
+`;
+
+const AddButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-size: 15px;
+  color: #1769ff;
+  font-weight: 700;
+  gap: 4px;
+  padding: 0;
+  &:hover .plus-circle {
+    background: #1769ff;
+    color: #fff;
+    border-color: #1769ff;
+  }
+  ${CandidateRow}:hover & {
+    opacity: 1;
+  }
+`;
+
+const PlusCircle = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #eaf3ff;
+  color: #1769ff;
+  font-size: 15px;
+  font-weight: 700;
+  margin-left: 2px;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+  border: 1.5px solid #eaf3ff;
+  line-height: 1;
 `;
 const Code = styled.span`
   font-size: 20px;
@@ -96,8 +143,9 @@ type Props = {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSearch: () => void;
-  candidates?: StockSearchResponse[];
-  onSelectCandidate?: (c: StockSearchResponse) => void;
+  candidates?: StockSearchCandidate[];
+  onSelectCandidate?: (c: StockSearchCandidate) => void;
+  isLoading: boolean;
 };
 
 export default function SearchBox({
@@ -106,11 +154,14 @@ export default function SearchBox({
   onSearch,
   candidates = [],
   onSelectCandidate,
+  isLoading,
 }: Props) {
-  const debouncedOnSearch = useCallback(debounce(onSearch, 400), [onSearch]);
+  const debouncedOnSearch = useCallback(debounce(onSearch, 300), [onSearch]);
   const [focused, setFocused] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const showDropdown = focused && value && candidates && candidates.length > 0;
+  const showDropdown =
+    focused && value && (isLoading || (candidates && candidates.length > 0));
 
   return (
     <div style={{ position: "relative", width: "100%" }}>
@@ -149,29 +200,68 @@ export default function SearchBox({
       </Wrapper>
       {showDropdown && (
         <Dropdown>
-          <DropdownHeader>検索結果: {candidates.length}件</DropdownHeader>
-          {candidates.map((c) => (
-            <CandidateRow
-              key={c.symbol}
-              onMouseDown={() => onSelectCandidate?.(c)}
-            >
-              <Code>{c.symbol}</Code>
-              <Name>{c.name}</Name>
-              <Price>
-                {c.current_price !== null
-                  ? `¥${c.current_price.toLocaleString()}`
-                  : "-"}
-              </Price>
-              {/* <Change color={c.changeColor}>
+          <DropdownHeader>
+            {isLoading ? (
+              <span style={{ color: "#1769ff", fontWeight: 500 }}>
+                検索中...
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 16,
+                    height: 16,
+                    marginLeft: 8,
+                    verticalAlign: "middle",
+                    border: "2px solid #1769ff",
+                    borderTop: "2px solid transparent",
+                    borderRadius: "50%",
+                    animation: "spin 0.8s linear infinite",
+                  }}
+                />
+                <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+              </span>
+            ) : (
+              <>検索結果: {candidates.length}件</>
+            )}
+          </DropdownHeader>
+          {!isLoading &&
+            candidates.map((c, i) => (
+              <CandidateRow
+                key={c.symbol}
+                $hovered={hoveredIndex === i}
+                onMouseDown={() => onSelectCandidate?.(c)}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(-1)}
+              >
+                <Code>{c.symbol}</Code>
+                <Name>{c.name}</Name>
+                <Price>
+                  {c.current_price !== null
+                    ? `¥${c.current_price.toLocaleString()}`
+                    : "-"}
+                </Price>
+                {/* <Change color={c.changeColor}>
                 {c.change} {c.changeRate}
               </Change> */}
-              <Info>PER: {c.per !== null ? `${c.per}倍` : "-"}</Info>
-              <Info>PBR: {c.pbr !== null ? `${c.pbr}倍` : "-"}</Info>
-              <Info>
-                配当: {c.dividend_yield !== null ? `${c.dividend_yield}%` : "-"}
-              </Info>
-            </CandidateRow>
-          ))}
+                <Info>PER: {c.per !== null ? `${c.per}倍` : "-"}</Info>
+                <Info>PBR: {c.pbr !== null ? `${c.pbr}倍` : "-"}</Info>
+                <Info>
+                  配当:{" "}
+                  {c.dividend_yield !== null ? `${c.dividend_yield}%` : "-"}
+                </Info>
+                <AddButton
+                  tabIndex={-1}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    onSelectCandidate?.(c);
+                  }}
+                  title="追加"
+                  style={{ opacity: hoveredIndex === i ? 1 : 0 }}
+                >
+                  追加
+                  <PlusCircle className="plus-circle">＋</PlusCircle>
+                </AddButton>
+              </CandidateRow>
+            ))}
         </Dropdown>
       )}
     </div>

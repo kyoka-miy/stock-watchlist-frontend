@@ -7,19 +7,19 @@ import { usePost } from "@/app/hooks/usePost";
 import { ENDPOINTS } from "@/app/constants/endpointConstants";
 import { usePut } from "@/app/hooks/usePut";
 
-const Tab = styled.div<{ active: boolean }>`
+const Tab = styled.div<{ $active: boolean }>`
   display: flex;
   align-items: center;
-  background: ${({ active }) => (active ? "#1769ff" : "#fff")};
-  border: ${({ active }) => (active ? "none" : "1.5px solid #d0d7e2")};
+  background: ${({ $active }) => ($active ? "#1769ff" : "#fff")};
+  border: ${({ $active }) => ($active ? "none" : "1.5px solid #d0d7e2")};
   border-radius: 16px;
   padding: 0.5rem 1.4rem 0.5rem 1.1rem;
   font-weight: 700;
-  color: ${({ active }) => (active ? "#fff" : "#222b45")};
+  color: ${({ $active }) => ($active ? "#fff" : "#222b45")};
   cursor: pointer;
   min-width: 0;
-  box-shadow: ${({ active }) =>
-    active ? "0 4px 16px rgba(23,105,255,0.13)" : "none"};
+  box-shadow: ${({ $active }) =>
+    $active ? "0 4px 16px rgba(23,105,255,0.13)" : "none"};
   gap: 10px;
   font-size: 16.5px;
   margin-right: 14px;
@@ -31,9 +31,9 @@ const Tab = styled.div<{ active: boolean }>`
     color 0.18s;
 `;
 
-const TabBadge = styled.span<{ active: boolean }>`
-  background: ${({ active }) => (active ? "#1769ff" : "#e3e8ef")};
-  color: ${({ active }) => (active ? "#fff" : "#6b7684")};
+const TabBadge = styled.span<{ $active: boolean }>`
+  background: ${({ $active }) => ($active ? "#1769ff" : "#e3e8ef")};
+  color: ${({ $active }) => ($active ? "#fff" : "#6b7684")};
   border-radius: 12px;
   font-size: 13.5px;
   padding: 0 10px;
@@ -111,7 +111,7 @@ export const StockListTags = ({
         {stockListsWithCount.map((list) => (
           <Tab
             key={list.id}
-            active={selectedListId === list.id}
+            $active={selectedListId === list.id}
             onClick={() => setSelectedListId(list.id)}
           >
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -201,7 +201,7 @@ export const StockListTags = ({
                     />
                   </svg>
                   {list.name}
-                  <TabBadge active={selectedListId === list.id}>
+                  <TabBadge $active={selectedListId === list.id}>
                     {list.count}
                   </TabBadge>
                 </>
