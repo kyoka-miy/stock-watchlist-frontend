@@ -4,8 +4,14 @@ import SearchBox from "../molecules/SearchBox";
 import { useGet } from "@/app/hooks/useGet";
 import { ENDPOINTS } from "@/app/constants/endpointConstants";
 import { StockSearchCandidate } from "@/app/api-interface/stock";
+import { usePost } from "@/app/hooks/usePost";
 
-export const SearchBoxCard = () => {
+type Props = {
+  selectedListId?: number;
+  onAdded?: () => void;
+};
+
+export const SearchBoxCard = ({ selectedListId, onAdded }: Props) => {
   const [searchText, setSearchText] = useState("");
 
   const {
@@ -18,7 +24,17 @@ export const SearchBoxCard = () => {
     shouldFetch: false,
   });
 
+  const { post } = usePost(
+    selectedListId ? ENDPOINTS.STOCK_LIST_STOCKS(selectedListId) : "",
+  );
+
   const handleSelectCandidate = (c: StockSearchCandidate) => {
+    if (!selectedListId) return;
+    post({ symbols: [c.symbol] }).then((res) => {
+      if (res) {
+        onAdded?.();
+      }
+    });
     setSearchText("");
   };
 

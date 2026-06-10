@@ -1,11 +1,12 @@
 "use client";
 import styled from "styled-components";
 import { useState } from "react";
-import { FaRegEdit } from "react-icons/fa";
 import { StockInfo, StockInfoWithPage } from "@/app/api-interface/stock";
+import Card from "../atoms/Card";
 
 const Table = styled.table`
-  width: 100%;
+  width: max-content;
+  min-width: 1700px;
   border-collapse: separate;
   border-spacing: 0;
   background: #fff;
@@ -15,6 +16,11 @@ const Table = styled.table`
   overflow: hidden;
   font-family:
     "Inter", "Helvetica Neue", Arial, "Hiragino Sans", "Meiryo", sans-serif;
+`;
+const TableContainer = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 `;
 const Th = styled.th<{ $sortable?: boolean }>`
   padding: 1.1rem 1.3rem;
@@ -42,21 +48,6 @@ const Tr = styled.tr`
   border-radius: 12px;
   &:hover {
     background: #eaf3fd;
-  }
-`;
-const EditCell = styled.td`
-  width: 44px;
-  text-align: center;
-  background: #fff;
-  position: relative;
-`;
-const EditIconWrapper = styled.span`
-  display: none;
-  color: #3498db;
-  font-size: 1.25rem;
-  cursor: pointer;
-  ${Tr}:hover & {
-    display: inline-block;
   }
 `;
 const SortIcon = styled.span`
@@ -105,7 +96,6 @@ export default function StockList({ stockInfoWithPage, onSelect }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("symbol");
   const [sortAsc, setSortAsc] = useState(true);
 
-  console.log("Rendering StockList with stocks:", stockInfoWithPage);
   const sortedStocks =
     stockInfoWithPage && stockInfoWithPage.stocks.items.length > 0
       ? [...stockInfoWithPage.stocks.items].sort((a, b) => {
@@ -130,65 +120,73 @@ export default function StockList({ stockInfoWithPage, onSelect }: Props) {
   };
 
   return (
-    <Table>
-      <thead>
-        <tr>
-          {columns.map((col) => (
-            <Th
-              key={col.key}
-              $sortable={true}
-              onClick={() => handleSort(col.key)}
-              style={{
-                background: "#f7fafd",
-                color: "#222b45",
-                fontWeight: 700,
-                fontSize: 15.5,
-                borderBottom: "2px solid #e3eaf3",
-                letterSpacing: "0.01em",
-              }}
-            >
-              {col.label}
-              {sortKey === col.key && (
-                <SortIcon>{sortAsc ? "▲" : "▼"}</SortIcon>
-              )}
-            </Th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {sortedStocks.map((stock) => (
-          <Tr key={stock.symbol} onClick={() => onSelect(stock)}>
-            {columns.map((col, idx) => (
-              <Td
-                key={col.key}
-                style={{
-                  textAlign: col.isNumeric ? "right" : "left",
-                  color: idx === 0 ? "#3498db" : "#222",
-                  fontWeight: idx === 0 ? 700 : 500,
-                  fontSize: 15.5,
-                  background: "#fff",
-                  letterSpacing: "0.01em",
-                  whiteSpace: idx === 1 ? "nowrap" : undefined,
-                }}
-                onClick={() => onSelect(stock)}
-              >
-                {typeof stock[col.key] === "number"
-                  ? col.isNumeric
-                    ? (stock[col.key] as number).toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })
-                    : stock[col.key]
-                  : stock[col.key]}
-              </Td>
+    <Card>
+      <TableContainer>
+        <Table>
+          <thead>
+            <tr>
+              {columns.map((col, idx) => (
+                <Th
+                  key={col.key}
+                  $sortable={true}
+                  onClick={() => handleSort(col.key)}
+                  style={{
+                    background: "#f7fafd",
+                    color: "#222b45",
+                    fontWeight: 700,
+                    fontSize: 15.5,
+                    borderBottom: "2px solid #e3eaf3",
+                    letterSpacing: "0.01em",
+                    width: idx === 1 ? 220 : undefined,
+                    minWidth: idx === 1 ? 220 : undefined,
+                    whiteSpace: idx === 1 ? "normal" : undefined,
+                  }}
+                >
+                  {col.label}
+                  {sortKey === col.key && (
+                    <SortIcon>{sortAsc ? "▲" : "▼"}</SortIcon>
+                  )}
+                </Th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedStocks.map((stock) => (
+              <Tr key={stock.symbol} onClick={() => onSelect(stock)}>
+                {columns.map((col, idx) => (
+                  <Td
+                    key={col.key}
+                    style={{
+                      textAlign: col.isNumeric ? "right" : "left",
+                      color: idx === 0 ? "#3498db" : "#222",
+                      fontWeight: idx === 0 ? 700 : 500,
+                      fontSize: 15.5,
+                      background: "#fff",
+                      letterSpacing: "0.01em",
+                      width: idx === 1 ? 220 : undefined,
+                      minWidth: idx === 1 ? 220 : undefined,
+                      maxWidth: idx === 1 ? 220 : undefined,
+                      whiteSpace: idx === 1 ? "normal" : undefined,
+                      wordBreak: idx === 1 ? "break-word" : undefined,
+                      overflowWrap: idx === 1 ? "anywhere" : undefined,
+                      lineHeight: idx === 1 ? 1.35 : undefined,
+                    }}
+                    onClick={() => onSelect(stock)}
+                  >
+                    {typeof stock[col.key] === "number"
+                      ? col.isNumeric
+                        ? (stock[col.key] as number).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })
+                        : stock[col.key]
+                      : stock[col.key]}
+                  </Td>
+                ))}
+              </Tr>
             ))}
-            <EditCell>
-              <EditIconWrapper onClick={() => {}} title="Edit">
-                <FaRegEdit />
-              </EditIconWrapper>
-            </EditCell>
-          </Tr>
-        ))}
-      </tbody>
-    </Table>
+          </tbody>
+        </Table>
+      </TableContainer>
+    </Card>
   );
 }

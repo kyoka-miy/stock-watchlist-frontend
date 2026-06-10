@@ -83,53 +83,6 @@ const initialStockLists = [
   },
 ];
 
-const allStocks: Stock[] = [
-  ...initialStockLists.flatMap((l) => l.stocks),
-  // 追加でサンプルを増やす場合はここに
-  {
-    code: "9432",
-    name: "日本電信電話",
-    price: 156,
-    dividendYield: 3.2,
-    dividendPerShare: 0,
-    payoutRatio: 0,
-    per: 11.5,
-    pbr: 1.3,
-    roe: 0,
-    roa: 0,
-    market: "東証プライム",
-    sector: "通信",
-  },
-  {
-    code: "6594",
-    name: "日本電産",
-    price: 11450,
-    dividendYield: 1.2,
-    dividendPerShare: 0,
-    payoutRatio: 0,
-    per: 28.5,
-    pbr: 2.8,
-    roe: 0,
-    roa: 0,
-    market: "東証プライム",
-    sector: "電機",
-  },
-  {
-    code: "2914",
-    name: "日本たばこ産業",
-    price: 3250,
-    dividendYield: 6.2,
-    dividendPerShare: 0,
-    payoutRatio: 0,
-    per: 14.8,
-    pbr: 1.6,
-    roe: 0,
-    roa: 0,
-    market: "東証プライム",
-    sector: "食品",
-  },
-];
-
 const Wrapper = styled.div`
   min-height: 100vh;
   background: #f7fafd;
@@ -249,7 +202,7 @@ export default function StockListTemplate() {
     <Wrapper>
       <div
         style={{
-          maxWidth: 1400,
+          maxWidth: 1600,
           margin: "0 auto",
           padding: "2.5rem 2rem 0 2rem",
         }}
@@ -272,13 +225,11 @@ export default function StockListTemplate() {
           setShowDeletePopup={setShowDeletePopup}
           refetchStockListsWithCount={refetchStockListsWithCount}
         />
-        <SearchBoxCard />
-        <Card style={{ margin: 0, boxShadow: "0 4px 24px rgba(0,0,0,0.07)" }}>
-          <StockList
-            stockInfoWithPage={stockInfoWithPage}
-            onSelect={() => {}}
-          />
-        </Card>
+        <SearchBoxCard
+          selectedListId={selectedListId}
+          onAdded={refetchStocks}
+        />
+        <StockList stockInfoWithPage={stockInfoWithPage} onSelect={() => {}} />
         {editStock && (
           <ModalOverlay>
             <ModalContent>

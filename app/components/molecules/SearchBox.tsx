@@ -80,14 +80,7 @@ const AddButton = styled.button`
   font-weight: 700;
   gap: 4px;
   padding: 0;
-  &:hover .plus-circle {
-    background: #1769ff;
-    color: #fff;
-    border-color: #1769ff;
-  }
-  ${CandidateRow}:hover & {
-    opacity: 1;
-  }
+
 `;
 
 const PlusCircle = styled.span`
@@ -239,9 +232,6 @@ export default function SearchBox({
                     ? `¥${c.current_price.toLocaleString()}`
                     : "-"}
                 </Price>
-                {/* <Change color={c.changeColor}>
-                {c.change} {c.changeRate}
-              </Change> */}
                 <Info>PER: {c.per !== null ? `${c.per}倍` : "-"}</Info>
                 <Info>PBR: {c.pbr !== null ? `${c.pbr}倍` : "-"}</Info>
                 <Info>
