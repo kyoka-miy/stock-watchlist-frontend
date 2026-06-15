@@ -12,18 +12,51 @@ export type StockSearchCandidate = {
 export type StockInfo = {
     symbol: string;
     name: string;
-    current_price: number | null;
-    dividend_yield: number | null;
-    dividend_per_share: number | null;
-    payout_ratio: number | null;
-    per: number | null;
-    pbr: number | null;
-    roe: number | null;
-    roa: number | null;
-    market: string | null;
-    sector: string | null;
-    industry: string | null;
+    current_price: string;
+    price_change_ratio: string;
+    volume: string;
+    market_cap: string;
+    per: number;
+    pbr: number;
+    roe: number;
+    roa: number;
+    operating_margin: string;
+    revenue_growth: string;
+    earnings_growth: string;
+    profit_growth: string;
+    current_ratio: string;
+    dividend_yield: string;
+    dividend_per_share: string;
+    payout_ratio: string;
+    free_cash_flow: string;
+    industry: string;
+    market: string;
 };
+
+export type SortKey = keyof StockInfo;
+export const StockInfoColumns: { key: SortKey; label: string; isNumeric?: boolean }[] = [
+  { key: "symbol", label: "銘柄コード" },
+  { key: "name", label: "銘柄名" },
+  { key: "current_price", label: "株価" },
+  { key: "price_change_ratio", label: "前日比" },
+  { key: "volume", label: "出来高" },
+  { key: "market_cap", label: "時価総額" },
+  { key: "per", label: "PER", isNumeric: true },
+  { key: "pbr", label: "PBR", isNumeric: true },
+  { key: "roe", label: "ROE", isNumeric: true },
+  { key: "roa", label: "ROA", isNumeric: true },
+  { key: "operating_margin", label: "営業利益率" },
+  { key: "revenue_growth", label: "売上成長率" },
+  { key: "earnings_growth", label: "利益成長率" },
+  { key: "profit_growth", label: "純利益成長率" },
+  { key: "current_ratio", label: "流動比率" },
+  { key: "dividend_yield", label: "配当利回り" },
+  { key: "dividend_per_share", label: "1株配当" },
+  { key: "payout_ratio", label: "配当性向" },
+  { key: "free_cash_flow", label: "フリーCF" },
+  { key: "market", label: "市場" },
+  { key: "industry", label: "業種" },
+];
 
 export type StockInfoWithPage = {
     name: string;

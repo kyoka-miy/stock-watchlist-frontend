@@ -1,115 +1,19 @@
 ("use client");
 import { useEffect, useState } from "react";
 import Button from "../atoms/Button";
-import StockList, { Stock } from "../organisms/StockList";
+import StockList from "../organisms/StockList";
 import styled from "styled-components";
 import { StockListTags } from "../organisms/StockListTags";
 import { StockListWithCount } from "@/app/api-interface/stockList";
 import { ENDPOINTS } from "@/app/constants/endpointConstants";
 import { useGet } from "@/app/hooks/useGet";
 import { useDelete } from "@/app/hooks/useDelete";
-import Card from "../atoms/Card";
 import { SearchBoxCard } from "../organisms/SearchBoxCard";
-import { StockInfo, StockInfoWithPage } from "@/app/api-interface/stock";
-
-const initialStockLists = [
-  {
-    id: 1,
-    name: "My Stocks",
-    stocks: [
-      {
-        code: "AAPL",
-        name: "Apple",
-        price: 170,
-        dividendYield: 0.55,
-        dividendPerShare: 0.96,
-        payoutRatio: 15.2,
-        per: 28,
-        pbr: 45,
-        roe: 30,
-        roa: 12,
-        market: "NASDAQ",
-        sector: "Technology",
-      },
-      {
-        code: "GOOGL",
-        name: "Google",
-        price: 2800,
-        dividendYield: 0.0,
-        dividendPerShare: 0.0,
-        payoutRatio: 0.0,
-        per: 25,
-        pbr: 10,
-        roe: 20,
-        roa: 8,
-        market: "NASDAQ",
-        sector: "Technology",
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "Tech Giants",
-    stocks: [
-      {
-        code: "MSFT",
-        name: "Microsoft",
-        price: 320,
-        dividendYield: 0.8,
-        dividendPerShare: 2.48,
-        payoutRatio: 28.5,
-        per: 35,
-        pbr: 15,
-        roe: 40,
-        roa: 15,
-        market: "NASDAQ",
-        sector: "Technology",
-      },
-      {
-        code: "AMZN",
-        name: "Amazon",
-        price: 3400,
-        dividendYield: 0.0,
-        dividendPerShare: 0.0,
-        payoutRatio: 0.0,
-        per: 60,
-        pbr: 20,
-        roe: 10,
-        roa: 3,
-        market: "NASDAQ",
-        sector: "Consumer Discretionary",
-      },
-    ],
-  },
-];
+import { StockInfoWithPage } from "@/app/api-interface/stock";
 
 const Wrapper = styled.div`
   min-height: 100vh;
   background: #f7fafd;
-`;
-
-const Tab = styled.div<{ active: boolean }>`
-  display: flex;
-  align-items: center;
-  background: ${({ active }) => (active ? "#1769ff" : "#fff")};
-  border: ${({ active }) => (active ? "none" : "1.5px solid #d0d7e2")};
-  border-radius: 16px;
-  padding: 0.5rem 1.4rem 0.5rem 1.1rem;
-  font-weight: 700;
-  color: ${({ active }) => (active ? "#fff" : "#222b45")};
-  cursor: pointer;
-  min-width: 0;
-  box-shadow: ${({ active }) =>
-    active ? "0 4px 16px rgba(23,105,255,0.13)" : "none"};
-  gap: 10px;
-  font-size: 16.5px;
-  margin-right: 14px;
-  letter-spacing: 0.01em;
-  transition:
-    box-shadow 0.18s,
-    border 0.18s,
-    background 0.18s,
-    color 0.18s;
 `;
 
 const ModalOverlay = styled.div`
@@ -138,14 +42,11 @@ const ModalContent = styled.div`
 `;
 
 export default function StockListTemplate() {
-  const [stockLists, setStockLists] = useState(initialStockLists);
   const [stockListsWithCount, setStockListsWithCount] = useState<
     StockListWithCount[]
   >([]);
   const [selectedListId, setSelectedListId] = useState<number>();
   const [showDeletePopup, setShowDeletePopup] = useState(false);
-  const [stocks, setStocks] = useState<StockInfo[]>([]);
-  const [editStock, setEditStock] = useState<Stock | null>(null);
 
   const { data: stockListsWithCountData, refetch: refetchStockListsWithCount } =
     useGet<StockListWithCount[]>({
@@ -174,28 +75,28 @@ export default function StockListTemplate() {
       refetchStocks();
     }
   }, [selectedListId]);
-  console.log("Stocks data:", stockInfoWithPage);
 
   const { del: deleteListApi } = useDelete(
     selectedListId ? `${ENDPOINTS.STOCK_LISTS}/${selectedListId}` : "",
   );
 
+  const { del: deleteStockFromListApi } = useDelete(
+    selectedListId ? ENDPOINTS.STOCK_LIST_STOCKS(selectedListId) : "",
+  );
+
   const handleDeleteList = async () => {
-    if (stockLists.length <= 1 || !selectedListId) return;
+    if (stockListsWithCount.length <= 1 || !selectedListId) return;
     await deleteListApi();
     refetchStockListsWithCount();
     setShowDeletePopup(false);
   };
 
-  const handleDeleteStock = (stockCode: string) => {
-    setStockLists((prev) =>
-      prev.map((list) =>
-        list.id === selectedListId
-          ? { ...list, stocks: list.stocks.filter((s) => s.code !== stockCode) }
-          : list,
-      ),
-    );
-    setEditStock(null);
+  const handleRemoveStockFromList = async (symbol: string) => {
+    if (!selectedListId) return;
+    await deleteStockFromListApi({
+      data: { symbols: [symbol] },
+    });
+    refetchStocks();
   };
 
   return (
@@ -229,38 +130,11 @@ export default function StockListTemplate() {
           selectedListId={selectedListId}
           onAdded={refetchStocks}
         />
-        <StockList stockInfoWithPage={stockInfoWithPage} onSelect={() => {}} />
-        {editStock && (
-          <ModalOverlay>
-            <ModalContent>
-              <div style={{ fontWeight: 600, fontSize: 18 }}>Edit Stock</div>
-              <div style={{ color: "#111", fontSize: 15 }}>
-                <b>
-                  {editStock.name} ({editStock.code})
-                </b>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "1rem",
-                  justifyContent: "flex-end",
-                  marginTop: 16,
-                }}
-              >
-                <Button onClick={() => setEditStock(null)} type="button">
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleDeleteStock(editStock.code)}
-                  type="button"
-                  style={{ background: "#e74c3c" }}
-                >
-                  Remove from List
-                </Button>
-              </div>
-            </ModalContent>
-          </ModalOverlay>
-        )}
+        <StockList
+          stockInfoWithPage={stockInfoWithPage}
+          onSelect={() => {}}
+          onRemoveStock={(stock) => handleRemoveStockFromList(stock.symbol)}
+        />
         {showDeletePopup && (
           <ModalOverlay>
             <ModalContent>
@@ -269,8 +143,8 @@ export default function StockListTemplate() {
               </div>
               <div style={{ color: "#666", fontSize: 15 }}>
                 Are you sure you want to delete "
-                {stockLists.find((l) => l.id === selectedListId)?.name}"? This
-                cannot be undone.
+                {stockListsWithCount.find((l) => l.id === selectedListId)?.name}
+                "? This cannot be undone.
               </div>
               <div
                 style={{
@@ -285,9 +159,10 @@ export default function StockListTemplate() {
                 <Button
                   onClick={handleDeleteList}
                   type="button"
-                  disabled={stockLists.length <= 1}
+                  disabled={stockListsWithCount.length <= 1}
                   style={{
-                    background: stockLists.length <= 1 ? "#ccc" : undefined,
+                    background:
+                      stockListsWithCount.length <= 1 ? "#ccc" : undefined,
                   }}
                 >
                   Delete

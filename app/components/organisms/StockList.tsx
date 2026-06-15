@@ -1,7 +1,12 @@
 "use client";
 import styled from "styled-components";
 import { useState } from "react";
-import { StockInfo, StockInfoWithPage } from "@/app/api-interface/stock";
+import {
+  SortKey,
+  StockInfo,
+  StockInfoColumns,
+  StockInfoWithPage,
+} from "@/app/api-interface/stock";
 import Card from "../atoms/Card";
 
 const Table = styled.table`
@@ -41,13 +46,30 @@ const Td = styled.td`
   background: #fff;
   font-size: 15.5px;
   letter-spacing: 0.01em;
+  transition:
+    background 0.15s,
+    color 0.15s;
+
+  &.stock-code,
+  &.stock-name {
+    color: #1f2937;
+    font-weight: 700;
+  }
 `;
 const Tr = styled.tr`
   cursor: pointer;
   transition: background 0.15s;
   border-radius: 12px;
   &:hover {
-    background: #eaf3fd;
+    background: #e7eef9;
+  }
+
+  &:hover ${Td} {
+    background: #e7eef9;
+  }
+
+  &:hover ${Td}.stock-code, &:hover ${Td}.stock-name {
+    color: #2563eb;
   }
 `;
 const SortIcon = styled.span`
@@ -55,46 +77,121 @@ const SortIcon = styled.span`
   font-size: 1em;
 `;
 
-export type Stock = {
-  code: string;
-  name: string;
-  price: number;
-  dividendYield: number;
-  dividendPerShare: number;
-  payoutRatio: number;
-  per: number;
-  pbr: number;
-  roe: number;
-  roa: number;
-  market: string;
-  sector: string;
-};
+const ActionTh = styled.th`
+  width: 46px;
+  min-width: 46px;
+  background: #f3f7fb;
+  border-bottom: 2px solid #e3eaf3;
+`;
 
-type SortKey = keyof StockInfo;
-const columns: { key: SortKey; label: string; isNumeric?: boolean }[] = [
-  { key: "symbol", label: "銘柄コード" },
-  { key: "name", label: "銘柄名" },
-  { key: "current_price", label: "株価", isNumeric: true },
-  { key: "dividend_yield", label: "配当利回り", isNumeric: true },
-  { key: "dividend_per_share", label: "1株配当", isNumeric: true },
-  { key: "payout_ratio", label: "配当性向", isNumeric: true },
-  { key: "per", label: "PER", isNumeric: true },
-  { key: "pbr", label: "PBR", isNumeric: true },
-  { key: "roe", label: "ROE", isNumeric: true },
-  { key: "roa", label: "ROA", isNumeric: true },
-  { key: "market", label: "市場" },
-  { key: "sector", label: "セクター" },
-  { key: "industry", label: "業種" },
-];
+const ActionTd = styled.td`
+  width: 46px;
+  min-width: 46px;
+  padding: 0 0 0 10px;
+  border-bottom: 1.5px solid #f2f5fa;
+  background: #fff;
+  position: relative;
+  transition: background 0.15s;
+
+  ${Tr}:hover & {
+    background: #e7eef9;
+  }
+`;
+
+const RemoveAction = styled.div`
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.14s,
+    transform 0.14s;
+
+  ${Tr}:hover & {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+`;
+
+const RemoveCircle = styled.button`
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.14s,
+    color 0.14s;
+
+  &:hover {
+    background: #fee2e2;
+    color: #ef4444;
+  }
+`;
+
+const CloseIcon = styled.span`
+  font-family: "Material Symbols Outlined";
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 20;
+  font-size: 18px;
+  line-height: 1;
+`;
+
+const PriceChangeCell = styled.span<{ $positive: boolean; $negative: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  color: ${({ $positive, $negative }) =>
+    $positive ? "#16a34a" : $negative ? "#dc2626" : "#4b5563"};
+`;
+
+const TrendIcon = styled.span<{ $positive: boolean; $negative: boolean }>`
+  font-family: "Material Symbols Outlined";
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 600,
+    "GRAD" 0,
+    "opsz" 20;
+  font-size: 18px;
+  line-height: 1;
+  color: ${({ $positive, $negative }) =>
+    $positive ? "#16a34a" : $negative ? "#dc2626" : "#4b5563"};
+`;
 
 type Props = {
   stockInfoWithPage: StockInfoWithPage;
   onSelect: (stock: StockInfo) => void;
+  onRemoveStock?: (stock: StockInfo) => void;
 };
 
-export default function StockList({ stockInfoWithPage, onSelect }: Props) {
+export default function StockList({
+  stockInfoWithPage,
+  onSelect,
+  onRemoveStock,
+}: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("symbol");
   const [sortAsc, setSortAsc] = useState(true);
+
+  const parseChangeRatio = (value: string | null | undefined) => {
+    if (value == null) return 0;
+    const normalized = String(value).trim().replace("%", "");
+    if (!normalized) return 0;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
 
   const sortedStocks =
     stockInfoWithPage && stockInfoWithPage.stocks.items.length > 0
@@ -125,7 +222,8 @@ export default function StockList({ stockInfoWithPage, onSelect }: Props) {
         <Table>
           <thead>
             <tr>
-              {columns.map((col, idx) => (
+              <ActionTh />
+              {StockInfoColumns.map((col, idx) => (
                 <Th
                   key={col.key}
                   $sortable={true}
@@ -153,15 +251,34 @@ export default function StockList({ stockInfoWithPage, onSelect }: Props) {
           <tbody>
             {sortedStocks.map((stock) => (
               <Tr key={stock.symbol} onClick={() => onSelect(stock)}>
-                {columns.map((col, idx) => (
+                <ActionTd>
+                  <RemoveAction>
+                    <RemoveCircle
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveStock?.(stock);
+                      }}
+                    >
+                      <CloseIcon>close</CloseIcon>
+                    </RemoveCircle>
+                  </RemoveAction>
+                </ActionTd>
+                {StockInfoColumns.map((col, idx) => (
                   <Td
                     key={col.key}
+                    className={
+                      col.key === "symbol"
+                        ? "stock-code"
+                        : col.key === "name"
+                          ? "stock-name"
+                          : undefined
+                    }
                     style={{
                       textAlign: col.isNumeric ? "right" : "left",
-                      color: idx === 0 ? "#3498db" : "#222",
-                      fontWeight: idx === 0 ? 700 : 500,
+                      fontWeight:
+                        col.key === "symbol" || col.key === "name" ? 700 : 500,
                       fontSize: 15.5,
-                      background: "#fff",
                       letterSpacing: "0.01em",
                       width: idx === 1 ? 220 : undefined,
                       minWidth: idx === 1 ? 220 : undefined,
@@ -173,13 +290,44 @@ export default function StockList({ stockInfoWithPage, onSelect }: Props) {
                     }}
                     onClick={() => onSelect(stock)}
                   >
-                    {typeof stock[col.key] === "number"
-                      ? col.isNumeric
-                        ? (stock[col.key] as number).toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                          })
-                        : stock[col.key]
-                      : stock[col.key]}
+                    {col.key === "price_change_ratio"
+                      ? (() => {
+                          const ratioValue = stock.price_change_ratio;
+                          const ratioText = ratioValue ?? "-";
+                          const ratioNumber = parseChangeRatio(ratioValue);
+                          const positive = ratioNumber > 0;
+                          const negative = ratioNumber < 0;
+                          const iconName = positive
+                            ? "trending_up"
+                            : negative
+                              ? "trending_down"
+                              : "trending_flat";
+
+                          return (
+                            <PriceChangeCell
+                              $positive={positive}
+                              $negative={negative}
+                            >
+                              <TrendIcon
+                                $positive={positive}
+                                $negative={negative}
+                              >
+                                {iconName}
+                              </TrendIcon>
+                              {ratioText}
+                            </PriceChangeCell>
+                          );
+                        })()
+                      : typeof stock[col.key] === "number"
+                        ? col.isNumeric
+                          ? (stock[col.key] as number).toLocaleString(
+                              undefined,
+                              {
+                                maximumFractionDigits: 2,
+                              },
+                            )
+                          : stock[col.key]
+                        : stock[col.key]}
                   </Td>
                 ))}
               </Tr>
