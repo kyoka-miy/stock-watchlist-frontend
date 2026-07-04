@@ -9,32 +9,41 @@ export type StockSearchCandidate = {
   dividend_yield: number | null;
 };
 
+export type PricePoint = {
+  date: string;
+  close: number;
+};
+
 export type StockInfo = {
-    symbol: string;
-    name: string;
-    current_price: string;
-    price_change_ratio: string;
-    volume: string;
-    market_cap: string;
-    per: number;
-    pbr: number;
-    roe: number;
-    roa: number;
-    operating_margin: string;
-    revenue_growth: string;
-    earnings_growth: string;
-    profit_growth: string;
-    current_ratio: string;
-    dividend_yield: string;
-    dividend_per_share: string;
-    payout_ratio: string;
-    free_cash_flow: string;
-    industry: string;
-    market: string;
+  symbol: string;
+  name: string;
+  current_price: string;
+  price_change_ratio: string;
+  volume: string;
+  market_cap: string;
+  per: number;
+  pbr: number;
+  roe: number;
+  roa: number;
+  operating_margin: string;
+  revenue_growth: string;
+  earnings_growth: string;
+  profit_growth: string;
+  current_ratio: string;
+  dividend_yield: string;
+  dividend_per_share: string;
+  payout_ratio: string;
+  free_cash_flow: string;
+  industry: string;
+  market: string;
 };
 
 export type SortKey = keyof StockInfo;
-export const StockInfoColumns: { key: SortKey; label: string; isNumeric?: boolean }[] = [
+export const StockInfoColumns: {
+  key: SortKey;
+  label: string;
+  isNumeric?: boolean;
+}[] = [
   { key: "symbol", label: "銘柄コード" },
   { key: "name", label: "銘柄名" },
   { key: "current_price", label: "株価" },
@@ -59,6 +68,30 @@ export const StockInfoColumns: { key: SortKey; label: string; isNumeric?: boolea
 ];
 
 export type StockInfoWithPage = {
-    name: string;
-    stocks: Page<StockInfo>;
-}
+  name: string;
+  stocks: Page<StockInfo>;
+};
+
+export type StockPriceHistoryResponse = {
+  symbol: string;
+  period: string;
+  interval: string;
+  points: PricePoint[];
+};
+
+export type StockDividendHistoryResponse = {
+  symbol: string;
+  years: number;
+  points: DividendHistoryPointSchema[];
+  average_dividend_per_share: number | null;
+  latest_dividend_yield: number | null;
+  growth_rate_percent: number | null;
+  average_payout_ratio: number | null;
+};
+
+export type DividendHistoryPointSchema = {
+  year: number;
+  dividend_per_share: number;
+  dividend_yield: number | null;
+  payout_ratio: number | null;
+};

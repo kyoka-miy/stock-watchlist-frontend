@@ -10,7 +10,7 @@ import { useGet } from "@/app/hooks/useGet";
 import { useDelete } from "@/app/hooks/useDelete";
 import { SearchBoxCard } from "../organisms/SearchBoxCard";
 import { StockInfo, StockInfoWithPage } from "@/app/api-interface/stock";
-import { StockDetailModal } from "../organisms/StockDetailModal";
+import { StockDetailModal } from "../organisms/stock-modal/StockDetailModal";
 import Header from "../organisms/Header";
 
 const Wrapper = styled.div`
