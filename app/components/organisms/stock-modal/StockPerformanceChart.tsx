@@ -17,6 +17,7 @@ import {
 } from "@/app/api-interface/stock";
 import { ENDPOINTS } from "@/app/constants/endpointConstants";
 import { useGet } from "@/app/hooks/useGet";
+import LoadingSpinner from "../../molecules/LoadingSpinner";
 
 type Props = {
   symbol: string;
@@ -43,6 +44,12 @@ const EmptyText = styled.div`
   font-size: 13px;
   padding: 32px 0;
   text-align: center;
+`;
+
+const LoadingBox = styled.div`
+  padding: 32px 0;
+  display: flex;
+  justify-content: center;
 `;
 
 const StatGrid = styled.div`
@@ -129,7 +136,7 @@ const PerformanceTooltip = ({ active, payload, label }: TooltipProps) => {
 };
 
 export const StockPerformanceChart = ({ symbol }: Props) => {
-  const { data, refetch } = useGet<StockPerformanceHistoryResponse>({
+  const { data, isLoading, refetch } = useGet<StockPerformanceHistoryResponse>({
     url: ENDPOINTS.STOCK_PERFORMANCE_HISTORY(symbol, 6),
     shouldFetch: false,
   });
@@ -137,6 +144,14 @@ export const StockPerformanceChart = ({ symbol }: Props) => {
   useEffect(() => {
     refetch();
   }, [symbol]);
+
+  if (isLoading) {
+    return (
+      <LoadingBox>
+        <LoadingSpinner />
+      </LoadingBox>
+    );
+  }
 
   const points: PerformanceHistoryPointSchema[] = data?.points ?? [];
 

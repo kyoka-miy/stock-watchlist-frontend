@@ -172,7 +172,7 @@ const TrendIcon = styled.span<{ $positive: boolean; $negative: boolean }>`
 `;
 
 type Props = {
-  stockInfoWithPage: StockInfoWithPage;
+  stockInfoWithPage?: StockInfoWithPage | null;
   onSelect: (stock: StockInfo) => void;
   onRemoveStock?: (stock: StockInfo) => void;
 };
@@ -193,19 +193,18 @@ export default function StockList({
     return Number.isFinite(parsed) ? parsed : 0;
   };
 
-  const sortedStocks =
-    stockInfoWithPage && stockInfoWithPage.stocks.items.length > 0
-      ? [...stockInfoWithPage.stocks.items].sort((a, b) => {
-          const aValue = a[sortKey];
-          const bValue = b[sortKey];
-          if (typeof aValue === "number" && typeof bValue === "number") {
-            return sortAsc ? aValue - bValue : bValue - aValue;
-          }
-          return sortAsc
-            ? String(aValue).localeCompare(String(bValue))
-            : String(bValue).localeCompare(String(aValue));
-        })
-      : [];
+  const sortedStocks = stockInfoWithPage?.stocks.items?.length
+    ? [...stockInfoWithPage.stocks.items].sort((a, b) => {
+        const aValue = a[sortKey];
+        const bValue = b[sortKey];
+        if (typeof aValue === "number" && typeof bValue === "number") {
+          return sortAsc ? aValue - bValue : bValue - aValue;
+        }
+        return sortAsc
+          ? String(aValue).localeCompare(String(bValue))
+          : String(bValue).localeCompare(String(aValue));
+      })
+    : [];
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {

@@ -1,4 +1,9 @@
 # Stock Watchlists
+
+## Live Demo
+
+- https://stock-watchlist-frontend-gamma.vercel.app/home
+
 <table>
   <tr>
     <td><img width="100%" alt="Screenshot 1" src="https://github.com/user-attachments/assets/66ea7ee5-2bd3-4777-86f7-552f3ed276c1" /></td>
@@ -9,7 +14,6 @@
     <td><img width="100%" alt="Screenshot 4" src="https://github.com/user-attachments/assets/587b3d05-c0da-4300-babe-75b0bc2caa5d" /></td>
   </tr>
 </table>
-
 
 This is a frontend app for building stock watchlists and reviewing key indicators and historical data for each symbol.  
 Users sign in with Google, then manage their watchlists and open detailed stock analytics views.

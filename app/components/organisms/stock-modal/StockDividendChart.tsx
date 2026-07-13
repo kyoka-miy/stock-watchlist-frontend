@@ -18,6 +18,7 @@ import {
 } from "@/app/api-interface/stock";
 import { ENDPOINTS } from "@/app/constants/endpointConstants";
 import { useGet } from "@/app/hooks/useGet";
+import LoadingSpinner from "../../molecules/LoadingSpinner";
 
 type Props = {
   symbol: string;
@@ -44,6 +45,12 @@ const EmptyText = styled.div`
   font-size: 13px;
   padding: 32px 0;
   text-align: center;
+`;
+
+const LoadingBox = styled.div`
+  padding: 32px 0;
+  display: flex;
+  justify-content: center;
 `;
 
 const StatGrid = styled.div`
@@ -117,7 +124,7 @@ const DividendTooltip = ({ active, payload, label }: TooltipProps) => {
 };
 
 export const StockDividendChart = ({ symbol }: Props) => {
-  const { data, refetch } = useGet<StockDividendHistoryResponse>({
+  const { data, isLoading, refetch } = useGet<StockDividendHistoryResponse>({
     url: ENDPOINTS.STOCK_DIVIDEND_HISTORY(symbol, 10),
     shouldFetch: false,
   });
@@ -125,6 +132,14 @@ export const StockDividendChart = ({ symbol }: Props) => {
   useEffect(() => {
     refetch();
   }, [symbol]);
+
+  if (isLoading) {
+    return (
+      <LoadingBox>
+        <LoadingSpinner />
+      </LoadingBox>
+    );
+  }
 
   const points: DividendHistoryPointSchema[] = data?.points ?? [];
 

@@ -22,6 +22,7 @@ import {
 } from "@/app/constants/stockChartConstants";
 import { useGet } from "@/app/hooks/useGet";
 import PriceTooltip from "./PriceTooltip";
+import LoadingSpinner from "../../molecules/LoadingSpinner";
 
 type Props = {
   symbol: string;
@@ -67,12 +68,18 @@ const EmptyText = styled.div`
   text-align: center;
 `;
 
+const LoadingBox = styled.div`
+  padding: 32px 0;
+  display: flex;
+  justify-content: center;
+`;
+
 export const StockPriceChart = ({ symbol }: Props) => {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodOption>(
     PERIOD_OPTIONS[6],
   );
 
-  const { data, refetch } = useGet<StockPriceHistoryResponse>({
+  const { data, isLoading, refetch } = useGet<StockPriceHistoryResponse>({
     url: ENDPOINTS.STOCK_PRICE_HISTORY(
       symbol,
       selectedPeriod.period,
@@ -84,6 +91,29 @@ export const StockPriceChart = ({ symbol }: Props) => {
   useEffect(() => {
     refetch();
   }, [symbol, selectedPeriod]);
+
+  if (isLoading) {
+    return (
+      <Wrapper>
+        <PeriodBar>
+          {PERIOD_OPTIONS.map((opt) => (
+            <PeriodButton
+              key={opt.period}
+              $active={selectedPeriod.period === opt.period}
+              type="button"
+              onClick={() => setSelectedPeriod(opt)}
+            >
+              {opt.label}
+            </PeriodButton>
+          ))}
+        </PeriodBar>
+        <ChartTitle>{selectedPeriod.chartTitle}</ChartTitle>
+        <LoadingBox>
+          <LoadingSpinner />
+        </LoadingBox>
+      </Wrapper>
+    );
+  }
 
   const chartData: PricePoint[] = data?.points ?? [];
 

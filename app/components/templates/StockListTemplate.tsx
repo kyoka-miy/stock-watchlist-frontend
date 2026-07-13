@@ -12,6 +12,7 @@ import { SearchBoxCard } from "../organisms/SearchBoxCard";
 import { StockInfo, StockInfoWithPage } from "@/app/api-interface/stock";
 import { StockDetailModal } from "../organisms/stock-modal/StockDetailModal";
 import Header from "../organisms/Header";
+import LoadingSpinner from "../molecules/LoadingSpinner";
 
 const Wrapper = styled.div`
   min-height: 100vh;
@@ -43,6 +44,17 @@ const ModalContent = styled.div`
   color: #111;
 `;
 
+const LoadingCard = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+  padding: 3rem 2rem;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 export default function StockListTemplate() {
   const [stockListsWithCount, setStockListsWithCount] = useState<
     StockListWithCount[]
@@ -68,11 +80,14 @@ export default function StockListTemplate() {
     }
   }, [stockListsWithCountData]);
 
-  const { data: stockInfoWithPage, refetch: refetchStocks } =
-    useGet<StockInfoWithPage>({
-      url: ENDPOINTS.STOCK_LIST(selectedListId ?? 0),
-      shouldFetch: !!selectedListId,
-    });
+  const {
+    data: stockInfoWithPage,
+    isLoading: isStocksLoading,
+    refetch: refetchStocks,
+  } = useGet<StockInfoWithPage>({
+    url: ENDPOINTS.STOCK_LIST(selectedListId ?? 0),
+    shouldFetch: !!selectedListId,
+  });
   useEffect(() => {
     if (selectedListId) {
       refetchStocks();
@@ -124,11 +139,17 @@ export default function StockListTemplate() {
           selectedListId={selectedListId}
           onAdded={refetchStocks}
         />
-        <StockList
-          stockInfoWithPage={stockInfoWithPage}
-          onSelect={(stock) => setSelectedStock(stock)}
-          onRemoveStock={(stock) => handleRemoveStockFromList(stock.symbol)}
-        />
+        {isStocksLoading ? (
+          <LoadingCard>
+            <LoadingSpinner size={28} thickness={3} />
+          </LoadingCard>
+        ) : (
+          <StockList
+            stockInfoWithPage={stockInfoWithPage}
+            onSelect={(stock) => setSelectedStock(stock)}
+            onRemoveStock={(stock) => handleRemoveStockFromList(stock.symbol)}
+          />
+        )}
         {selectedStock && (
           <StockDetailModal
             stock={selectedStock}
